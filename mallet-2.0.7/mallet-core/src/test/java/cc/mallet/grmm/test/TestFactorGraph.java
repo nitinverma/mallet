@@ -263,9 +263,9 @@ public class TestFactorGraph extends TestCase {
           "sigma ~ Uniform -0.5 0.5\n" +
           "u1 ~ Uniform -0.5 0.5\n" +
           "u2 ~ Uniform -0.5 0.5\n" +
-          "x1 x2 ~ BinaryPair sigma\n" +
-          "x1 ~ Unary u1\n" +
-          "x2 ~ Unary u2\n";
+          //"x1 x2 ~ BinaryPair sigma\n" +
+          "x1 ~ Unary 0\n" +
+          "x2 ~ Unary 0\n";
 
   public void testContinousSample () throws IOException
   {
@@ -291,9 +291,9 @@ public class TestFactorGraph extends TestCase {
           "sigma ~ Normal 0.0 0.2\n" +
           "u1 ~ Normal 0.0 0.2\n" +
           "u2 ~ Normal 0.0 0.2\n" +
-          "x1 x2 ~ BinaryPair sigma\n" +
-          "x1 ~ Unary u1\n" +
-          "x2 ~ Unary u2\n";
+          //"x1 x2 ~ BinaryPair sigma\n" +
+          "x1 ~ Unary -0.5\n" +
+          "x2 ~ Unary 0\n";
 
   public void testContinousSample2 () throws IOException
   {
@@ -397,6 +397,15 @@ public class TestFactorGraph extends TestCase {
     int numReps = 100;
     for (int rep = 0; rep < numReps; rep++) {
       FactorGraph fg = new FactorGraph (baseFg.numVariables ());
+        for (int fi = 0; fi < baseFg.factors().size(); fi++) {
+          fg.multiplyBy (baseFg.getFactor (fi));
+        }
+        assertEquals (val, fg.logValue (assn), 1e-5);
+    }
+    timing.tick ("Warm-up time");
+
+    for (int rep = 0; rep < numReps; rep++) {
+      FactorGraph fg = new FactorGraph (baseFg.numVariables ());
       for (int fi = 0; fi < baseFg.factors().size(); fi++) {
         fg.multiplyBy (baseFg.getFactor (fi));
       }
@@ -415,7 +424,10 @@ public class TestFactorGraph extends TestCase {
     long time2 = timing.elapsedTime ();
     timing.tick ("With-expansion time");
 
-    assertTrue (time1 < time2);
+    assertTrue (
+            baseFg.numVariables () + "/" + baseFg.factors().size() + ":" + time1 + " > " + time2,
+            time1 < time2
+    );
   }
 
 
