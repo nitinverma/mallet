@@ -14,11 +14,16 @@
 
 package cc.mallet.types;
 
+import cc.mallet.util.MalletLogger;
+
 import java.util.ArrayList;
 import java.io.*;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.HashMap;
 import java.rmi.dgc.VMID;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 /**
  *  A mapping between integers and objects where the mapping in each
@@ -40,6 +45,7 @@ import java.rmi.dgc.VMID;
  */
 public class Alphabet implements Serializable
 {
+    private static final Logger LOGGER = MalletLogger.getLogger(Alphabet.class.getName());
 	gnu.trove.TObjectIntHashMap map;
 	ArrayList entries;
 	boolean growthStopped = false;
@@ -237,14 +243,57 @@ public class Alphabet implements Serializable
 	public static boolean alphabetsMatch (AlphabetCarrying object1, AlphabetCarrying object2) {
 		Alphabet[] a1 = object1.getAlphabets();
 		Alphabet[] a2 = object2.getAlphabets();
+
+        if (LOGGER.isLoggable(Level.FINE)) {
+            LOGGER.log(Level.FINE, "a1: " + (a1==null?"null": Arrays.asList(a1)) );
+            LOGGER.log(Level.FINE, "a2: " + (a2==null?"null": Arrays.asList(a2)) );
+        }
+
 		if (a1.length != a2.length) return false;
 		for (int i = 0; i < a1.length; i++) {
-			if (a1[i] == a2[i]) continue;
-			if (a1[i] == null || a2[i] == null) return false;  // One is null, but the other isn't
-			if (! a1[i].equals(a2[i])) return false;
+			if (a1[i] == a2[i]) {
+                if ( LOGGER.isLoggable(Level.FINE) ) {
+                    LOGGER.log(Level.FINE,"a1[i] == a2[i]");
+                }
+                continue;
+            }
+            if ( a1[i] != null && a1[i].isEmpty() && a2[i] == null ) {
+                if ( LOGGER.isLoggable(Level.FINE) ) {
+                    LOGGER.log(Level.FINE,"a1[i].isEmpty() && a2[i] == null");
+                }
+                continue;
+            }
+            if ( a2[i] != null && a1[i] == null && a2[i].isEmpty() ) {
+                if ( LOGGER.isLoggable(Level.FINE) ) {
+                    LOGGER.log(Level.FINE,"a1[i].isEmpty() && a2[i] == null");
+                }
+                continue;
+            }
+            if ( a1[i].isEmpty() && a2[i].isEmpty() ) {
+                if ( LOGGER.isLoggable(Level.FINE) ) {
+                    LOGGER.log(Level.FINE,"a1[i].isEmpty() && a2[i].isEmpty()");
+                }
+                continue;
+            }
+            if (a1[i] == null || a2[i] == null) {
+                if ( LOGGER.isLoggable(Level.INFO) ) {
+                    LOGGER.info("a1[i] == null || a2[i] == null");
+                }
+                return false;  // One is null, but the other isn't
+            }
+			if (! a1[i].equals(a2[i])) {
+                if ( LOGGER.isLoggable(Level.INFO) ) {
+                    LOGGER.info("! a1[i].equals(a2[i])");
+                }
+                return false;
+            }
 		}
 		return true;
 	}
+
+    public boolean isEmpty() {
+        return ( entries == null || entries.size() == 0 );
+    }
 
 	public VMID getInstanceId() { return instanceId;} // for debugging
 	public void setInstanceId(VMID id) { this.instanceId = id; }
