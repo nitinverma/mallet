@@ -1673,7 +1673,7 @@ public void testJtConsistency() {
       System.out.println ("OUT OF MEMORY: Messages sent "+inf.getTotalMessagesSent ());
       throw e;
     }
-    
+
     timing.tick ("Inference time (Random sched BP)");
   }
 
@@ -1737,10 +1737,10 @@ public void testJtConsistency() {
           "VAR alpha u : CONTINUOUS\n" +
           "alpha ~ Uniform -1.0 1.0\n" +
           "u ~ Uniform -2.0 2.0\n" +
-          "x00 ~ Unary u\n" +
-          "x10 ~ Unary u\n" +
-          "x01 ~ Unary u\n" +
-          "x11 ~ Unary u\n" +
+          "x00 ~ Unary 0.90\n" +
+          "x10 ~ Unary -0.80\n" +
+          "x01 ~ Unary -0.99\n" +
+          "x11 ~ Unary 0.78\n" +
           "x00 x01 ~ Potts alpha\n" +
           "x00 x10 ~ Potts alpha\n" +
           "x01 x11 ~ Potts alpha\n" +

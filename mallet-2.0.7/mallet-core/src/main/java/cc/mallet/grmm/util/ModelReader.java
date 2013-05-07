@@ -10,6 +10,7 @@ package cc.mallet.grmm.util;
 import bsh.EvalError;
 import bsh.Interpreter;
 import cc.mallet.grmm.types.*;
+import cc.mallet.util.MalletLogger;
 import gnu.trove.THashMap;
 
 import java.io.BufferedReader;
@@ -18,8 +19,11 @@ import java.io.Reader;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.regex.Pattern;
 
 /**
@@ -28,6 +32,7 @@ import java.util.regex.Pattern;
 public class ModelReader {
 
     private static THashMap allClasses;
+    private static final Logger LOGGER = MalletLogger.getLogger(ModelReader.class.getName());
 
     static {
         allClasses = new THashMap();
@@ -186,14 +191,31 @@ public class ModelReader {
                 buf.append(" ");
             }
             buf.append("\n");
+            LOGGER.log(Level.SEVERE, buf.toString());
+
             throw new RuntimeException(buf.toString());
         }
 
     }
 
     private Class determineFactorClass(String[] fields, int twiddleIdx) {
+        if ( LOGGER.isLoggable(Level.FINE) ) {
+            LOGGER.log(Level.FINE, "fields = " + Arrays.asList(fields));
+            LOGGER.log(Level.FINE, "twiddleIdx = " + twiddleIdx);
+            if (fields != null && fields.length > twiddleIdx + 1 ) {
+                LOGGER.log(Level.FINE, "twiddleField = " + fields[twiddleIdx + 1]);
+            }
+        }
+
         String factorName = fields[twiddleIdx + 1].toLowerCase();
+
+        if ( LOGGER.isLoggable(Level.FINE) ) {
+            LOGGER.log(Level.FINE, "Looking for factorName = " + factorName);
+            LOGGER.log(Level.FINE, "Looking in allClasses = " + allClasses);
+        }
+
         Class theClass = (Class) allClasses.get(factorName);
+
         if (theClass != null) {
             return theClass;
         } else {
@@ -211,12 +233,19 @@ public class ModelReader {
             args.add(varFromName(fields[i], false));
         }
 
+        if ( LOGGER.isLoggable(Level.FINE) ) {
+            LOGGER.log(Level.FINE, "Determined Factor Args = " + args);
+        }
         return args.toArray();
     }
 
     private static Pattern nbrRegex = Pattern.compile("[+-]?\\d+(?:\\.\\d+)?(E[+-]\\d+)?");
 
     private Object varFromName(String name, boolean preTwiddle) {
+        if ( LOGGER.isLoggable(Level.FINE) ) {
+            LOGGER.log(Level.FINE, "Name to variable mapping: " + name2var);
+        }
+
         if (nbrRegex.matcher(name).matches()) {
             return new Double(Double.parseDouble(name));
         } else if (name2var.contains(name)) {
