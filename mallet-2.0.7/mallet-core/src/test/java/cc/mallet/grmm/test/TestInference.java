@@ -26,7 +26,6 @@ import junit.framework.TestCase;
 import junit.framework.TestSuite;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.IOException;
 import java.io.StringReader;
 import java.util.*;
@@ -915,16 +914,7 @@ public class TestInference extends TestCase {
                     "</TREE>",
     };
 
-    /**
-     * TODO: This test fails need to look at it again.
-     */
-    public void donotTestTrpTreeList() {
-        final File dir = new File("Wainwright/TRP");
-        if ( dir.exists() ) {
-            dir.delete();
-        }
-        dir.mkdirs();
-
+    public void testTrpTreeList() {
         FactorGraph model = createTriangle();
         model.getVariable(0).setLabel("V0");
         model.getVariable(1).setLabel("V1");
@@ -935,10 +925,9 @@ public class TestInference extends TestCase {
             readers.add(new StringReader(treeStrs[i]));
         }
 
-        TRP trp = new TRP().setTerminator(new TRP.DefaultConvergenceTerminator(0.01, 1000))
+        TRP trp = new TRP().setTerminator(new TRP.DefaultConvergenceTerminator())
                 .setFactory(TRP.TreeListFactory.makeFromReaders(model, readers));
 
-        trp.setVerboseOutputDirectory(dir);
         trp.computeMarginals(model);
 
         Inferencer jt = new BruteForceInferencer();
@@ -1245,7 +1234,7 @@ public class TestInference extends TestCase {
             Factor ptl1 = inf1.lookupMarginal(var);
             Factor ptl2 = inf2.lookupMarginal(var);
             assertTrue(msg + "\n" + ptl1.dumpToString() + "\n" + ptl2.dumpToString(),
-                    ptl1.almostEquals(ptl2, 1e-1));
+                    ptl1.almostEquals(ptl2, 1e-5));
         }
     }
 
