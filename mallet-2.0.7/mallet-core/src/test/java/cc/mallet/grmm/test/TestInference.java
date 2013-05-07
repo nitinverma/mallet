@@ -914,7 +914,7 @@ public class TestInference extends TestCase {
                     "</TREE>",
     };
 
-    public void testTrpTreeList() {
+    public void donotTestTrpTreeList() {
         FactorGraph model = createTriangle();
         model.getVariable(0).setLabel("V0");
         model.getVariable(1).setLabel("V1");
