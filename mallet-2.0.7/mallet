@@ -1,0 +1,33 @@
+#!/usr/bin/env bash
+usage() {
+	echo "$0 <classname> <options>"
+}
+
+CURR_PWD=${PWD}
+cd $(dirname $0)
+SCRIPT_PWD=${PWD}
+
+TARGET=mallet-core/target
+
+if [ ! -d $TARGET ]
+then
+	./compile
+fi
+
+DEPENDENCIES=${TARGET}/dependency
+
+if [ ! -d $DEPENDENCIES ]
+then
+	mvn dependency:copy-dependencies
+fi
+
+if [ -s $@ ]
+then
+	usage
+	exit 1
+fi
+
+java -cp ${TARGET}/classes:$(echo $(ls ${DEPENDENCIES}/*.jar) | sed -e 's/ /:/g' ) $@
+
+cd $CURR_PWD
+
