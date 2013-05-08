@@ -41,6 +41,10 @@ import junit.framework.TestCase;
 import junit.framework.TestSuite;
 
 import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
 
 public class TestNaiveBayes extends TestCase {
     public TestNaiveBayes(String name) {
@@ -145,8 +149,8 @@ public class TestNaiveBayes extends TestCase {
     public void testIncrementallyTrainedGrowingAlphabets() {
         System.out.println("testIncrementallyTrainedGrowingAlphabets");
         String[] args = new String[]{
-                "src/cc/mallet/classify/tests/NaiveBayesData/learn/a",
-                "src/cc/mallet/classify/tests/NaiveBayesData/learn/b"
+                "NaiveBayesData/learn/a",
+                "NaiveBayesData/learn/b"
         };
 
         File[] directories = new File[args.length];
@@ -178,7 +182,7 @@ public class TestNaiveBayes extends TestCase {
 
         // incrementally train...
         String[] t2directories = {
-                "src/cc/mallet/classify/tests/NaiveBayesData/learn/b"
+                "NaiveBayesData/learn/b"
         };
 
         System.out.println("data alphabet size " + instList.getDataAlphabet().size());
@@ -198,8 +202,8 @@ public class TestNaiveBayes extends TestCase {
     public void testIncrementallyTrained() {
         System.out.println("testIncrementallyTrained");
         String[] args = new String[]{
-                "src/cc/mallet/classify/tests/NaiveBayesData/learn/a",
-                "src/cc/mallet/classify/tests/NaiveBayesData/learn/b"
+                "NaiveBayesData/learn/a",
+                "NaiveBayesData/learn/b"
         };
 
         File[] directories = new File[args.length];
@@ -238,7 +242,7 @@ public class TestNaiveBayes extends TestCase {
 
         // incrementally train...
         String[] t2directories = {
-                "src/cc/mallet/classify/tests/NaiveBayesData/learn/b"
+                "NaiveBayesData/learn/b"
         };
 
         System.out.println("data alphabet size " + instList.getDataAlphabet().size());
@@ -260,8 +264,8 @@ public class TestNaiveBayes extends TestCase {
     public void testEmptyStringBug() {
         System.out.println("testEmptyStringBug");
         String[] args = new String[]{
-                "src/cc/mallet/classify/tests/NaiveBayesData/learn/a",
-                "src/cc/mallet/classify/tests/NaiveBayesData/learn/b"
+                "NaiveBayesData/learn/a",
+                "NaiveBayesData/learn/b"
         };
 
         File[] directories = new File[args.length];
@@ -300,7 +304,7 @@ public class TestNaiveBayes extends TestCase {
 
         // test
         String[] t2directories = {
-                "src/cc/mallet/classify/tests/NaiveBayesData/learn/b"
+                "NaiveBayesData/learn/b"
         };
 
         System.out.println("data alphabet size " + instList.getDataAlphabet().size());
@@ -331,6 +335,39 @@ public class TestNaiveBayes extends TestCase {
     }
 
     protected void setUp() {
+        new File("NaiveBayesData/learn/a").mkdirs();
+        new File("NaiveBayesData/learn/b").mkdirs();
+
+        save("cc/mallet/classify/tests/NaiveBayesData/learn/a/m1", "NaiveBayesData/learn/a/m1");
+        save("cc/mallet/classify/tests/NaiveBayesData/learn/a/ma", "NaiveBayesData/learn/a/ma");
+        save("cc/mallet/classify/tests/NaiveBayesData/learn/b/m2", "NaiveBayesData/learn/b/m2");
+    }
+
+    private void save(final String classpathResource, final String filename) {
+        final InputStream inputStream =
+                this.getClass().getClassLoader().getResourceAsStream(classpathResource);
+        OutputStream outputStream;
+        try {
+            outputStream = new FileOutputStream(new File(filename));
+            try {
+                save(inputStream, outputStream);
+            } finally {
+                if (outputStream != null) {
+                    outputStream.close();
+                }
+                if (inputStream != null) {
+                    inputStream.close();
+                }
+            }
+        } catch (final IOException ioException) {
+            ioException.printStackTrace();
+        }
+    }
+
+    private void save(final InputStream inputStream, final OutputStream outputStream) throws IOException {
+        final byte bytes[] = new byte[inputStream.available()];
+        inputStream.read(bytes);
+        outputStream.write(bytes);
     }
 
     public static void main(String[] args) {
