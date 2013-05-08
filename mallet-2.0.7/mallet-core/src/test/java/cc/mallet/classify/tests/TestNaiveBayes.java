@@ -6,331 +6,335 @@
    information, see the file `LICENSE' included with this distribution. */
 
 
-
-
-/** 
-   @author Andrew McCallum <a href="mailto:mccallum@cs.umass.edu">mccallum@cs.umass.edu</a>
+/**
+ @author Andrew McCallum <a href="mailto:mccallum@cs.umass.edu">mccallum@cs.umass.edu</a>
  */
 
 package cc.mallet.classify.tests;
 
-import junit.framework.*;
-import java.net.URI;
-import java.io.File;
-
-import cc.mallet.classify.*;
-import cc.mallet.pipe.*;
+import cc.mallet.classify.Classification;
+import cc.mallet.classify.Classifier;
+import cc.mallet.classify.NaiveBayes;
+import cc.mallet.classify.NaiveBayesTrainer;
+import cc.mallet.pipe.CharSequence2TokenSequence;
+import cc.mallet.pipe.FeatureSequence2FeatureVector;
+import cc.mallet.pipe.Input2CharSequence;
+import cc.mallet.pipe.Noop;
+import cc.mallet.pipe.Pipe;
+import cc.mallet.pipe.SerialPipes;
+import cc.mallet.pipe.Target2Label;
+import cc.mallet.pipe.TokenSequence2FeatureSequence;
+import cc.mallet.pipe.TokenSequenceLowercase;
+import cc.mallet.pipe.TokenSequenceRemoveStopwords;
 import cc.mallet.pipe.iterator.ArrayIterator;
 import cc.mallet.pipe.iterator.FileIterator;
-import cc.mallet.types.*;
-import cc.mallet.util.*;
+import cc.mallet.types.Alphabet;
+import cc.mallet.types.FeatureVector;
+import cc.mallet.types.Instance;
+import cc.mallet.types.InstanceList;
+import cc.mallet.types.LabelAlphabet;
+import cc.mallet.types.LabelVector;
+import cc.mallet.types.Multinomial;
+import cc.mallet.util.Randoms;
+import junit.framework.Test;
+import junit.framework.TestCase;
+import junit.framework.TestSuite;
 
-public class TestNaiveBayes extends TestCase
-{
-	public TestNaiveBayes (String name)
-	{
-		super (name);
-	}
+import java.io.File;
 
-	public void testNonTrained ()
-	{
-		Alphabet fdict = new Alphabet ();
-		System.out.println ("fdict.size="+fdict.size());
-		LabelAlphabet ldict = new LabelAlphabet ();
-		Multinomial.Estimator me1 = new Multinomial.LaplaceEstimator (fdict);
-		Multinomial.Estimator me2 = new Multinomial.LaplaceEstimator (fdict);
+public class TestNaiveBayes extends TestCase {
+    public TestNaiveBayes(String name) {
+        super(name);
+    }
 
-		// Prior
-		ldict.lookupIndex ("sports");
-		ldict.lookupIndex ("politics");
-		ldict.stopGrowth ();
-		System.out.println ("ldict.size="+ldict.size());
-		Multinomial prior = new Multinomial (new double[] {.5, .5}, ldict);
+    public void testNonTrained() {
+        Alphabet fdict = new Alphabet();
+        System.out.println("fdict.size=" + fdict.size());
+        LabelAlphabet ldict = new LabelAlphabet();
+        Multinomial.Estimator me1 = new Multinomial.LaplaceEstimator(fdict);
+        Multinomial.Estimator me2 = new Multinomial.LaplaceEstimator(fdict);
 
-		// Sports
-		me1.increment ("win", 5);
-		me1.increment ("puck", 5);
-		me1.increment ("team", 5);
-		System.out.println ("fdict.size="+fdict.size());
+        // Prior
+        ldict.lookupIndex("sports");
+        ldict.lookupIndex("politics");
+        ldict.stopGrowth();
+        System.out.println("ldict.size=" + ldict.size());
+        Multinomial prior = new Multinomial(new double[]{.5, .5}, ldict);
 
-		// Politics
-		me2.increment ("win", 5);
-		me2.increment ("speech", 5);
-		me2.increment ("vote", 5);
+        // Sports
+        me1.increment("win", 5);
+        me1.increment("puck", 5);
+        me1.increment("team", 5);
+        System.out.println("fdict.size=" + fdict.size());
 
-		Multinomial sports = me1.estimate();
-		Multinomial politics = me2.estimate();
+        // Politics
+        me2.increment("win", 5);
+        me2.increment("speech", 5);
+        me2.increment("vote", 5);
 
-		// We must estimate from me1 and me2 after all data is incremented,
-		// so that the "sports" multinomial knows the full dictionary size!
+        Multinomial sports = me1.estimate();
+        Multinomial politics = me2.estimate();
 
-		Classifier c = new NaiveBayes (new Noop (fdict, ldict),
-				prior,
-				new Multinomial[] {sports, politics});
+        // We must estimate from me1 and me2 after all data is incremented,
+        // so that the "sports" multinomial knows the full dictionary size!
 
-		Instance inst = c.getInstancePipe().instanceFrom(
-				new Instance (new FeatureVector (fdict,
-						new Object[] {"speech", "win"},
-						new double[] {1, 1}),
-						ldict.lookupLabel ("politics"),
-						null, null));
-		System.out.println ("inst.data = "+inst.getData ());
+        Classifier c = new NaiveBayes(new Noop(fdict, ldict),
+                prior,
+                new Multinomial[]{sports, politics});
 
-		Classification cf = c.classify (inst);
-		LabelVector l = (LabelVector) cf.getLabeling();
-		//System.out.println ("l.size="+l.size());
-		System.out.println ("l.getBestIndex="+l.getBestIndex());
-		assertTrue (cf.getLabeling().getBestLabel()
-				== ldict.lookupLabel("politics"));
-		assertTrue (cf.getLabeling().getBestValue()	> 0.6);
-	}
+        Instance inst = c.getInstancePipe().instanceFrom(
+                new Instance(new FeatureVector(fdict,
+                        new Object[]{"speech", "win"},
+                        new double[]{1, 1}),
+                        ldict.lookupLabel("politics"),
+                        null, null));
+        System.out.println("inst.data = " + inst.getData());
 
-	public void testStringTrained ()
-	{
-		String[] africaTraining = new String[] {
-				"on the plains of africa the lions roar",
-				"in swahili ngoma means to dance",
-				"nelson mandela became president of south africa",
-		"the saraha dessert is expanding"};
-		String[] asiaTraining = new String[] {
-				"panda bears eat bamboo",
-				"china's one child policy has resulted in a surplus of boys",
-		"tigers live in the jungle"};
+        Classification cf = c.classify(inst);
+        LabelVector l = (LabelVector) cf.getLabeling();
+        //System.out.println ("l.size="+l.size());
+        System.out.println("l.getBestIndex=" + l.getBestIndex());
+        assertTrue(cf.getLabeling().getBestLabel()
+                == ldict.lookupLabel("politics"));
+        assertTrue(cf.getLabeling().getBestValue() > 0.6);
+    }
 
-		InstanceList instances =
-			new InstanceList (
-					new SerialPipes (new Pipe[] {
-							new Target2Label (),
-							new CharSequence2TokenSequence (),
-							new TokenSequence2FeatureSequence (),
-							new FeatureSequence2FeatureVector ()}));
+    public void testStringTrained() {
+        String[] africaTraining = new String[]{
+                "on the plains of africa the lions roar",
+                "in swahili ngoma means to dance",
+                "nelson mandela became president of south africa",
+                "the saraha dessert is expanding"};
+        String[] asiaTraining = new String[]{
+                "panda bears eat bamboo",
+                "china's one child policy has resulted in a surplus of boys",
+                "tigers live in the jungle"};
 
-		instances.addThruPipe (new ArrayIterator (africaTraining, "africa"));
-		instances.addThruPipe (new ArrayIterator (asiaTraining, "asia"));
-		Classifier c = new NaiveBayesTrainer ().train (instances);
+        InstanceList instances =
+                new InstanceList(
+                        new SerialPipes(new Pipe[]{
+                                new Target2Label(),
+                                new CharSequence2TokenSequence(),
+                                new TokenSequence2FeatureSequence(),
+                                new FeatureSequence2FeatureVector()}));
 
-		Classification cf = c.classify ("nelson mandela never eats lions");
-		assertTrue (cf.getLabeling().getBestLabel()
-				== ((LabelAlphabet)instances.getTargetAlphabet()).lookupLabel("africa"));
-	}
+        instances.addThruPipe(new ArrayIterator(africaTraining, "africa"));
+        instances.addThruPipe(new ArrayIterator(asiaTraining, "asia"));
+        Classifier c = new NaiveBayesTrainer().train(instances);
 
-	public void testRandomTrained ()
-	{
-		InstanceList ilist = new InstanceList (new Randoms(1), 10, 2);
-		Classifier c = new NaiveBayesTrainer ().train (ilist);
-		// test on the training data
-		int numCorrect = 0;
-		for (int i = 0; i < ilist.size(); i++) {
-			Instance inst = ilist.get(i);
-			Classification cf = c.classify (inst);
-			cf.print ();
-			if (cf.getLabeling().getBestLabel() == inst.getLabeling().getBestLabel())
-				numCorrect++;
-		}
-		System.out.println ("Accuracy on training set = " + ((double)numCorrect)/ilist.size());
-	}
+        Classification cf = c.classify("nelson mandela never eats lions");
+        assertTrue(cf.getLabeling().getBestLabel()
+                == ((LabelAlphabet) instances.getTargetAlphabet()).lookupLabel("africa"));
+    }
 
-	public void testIncrementallyTrainedGrowingAlphabets()
-	{
-		System.out.println("testIncrementallyTrainedGrowingAlphabets");
-		String[]    args = new String[] {
-				"src/cc/mallet/classify/tests/NaiveBayesData/learn/a",
-				"src/cc/mallet/classify/tests/NaiveBayesData/learn/b"
-		};
+    public void testRandomTrained() {
+        InstanceList ilist = new InstanceList(new Randoms(1), 10, 2);
+        Classifier c = new NaiveBayesTrainer().train(ilist);
+        // test on the training data
+        int numCorrect = 0;
+        for (int i = 0; i < ilist.size(); i++) {
+            Instance inst = ilist.get(i);
+            Classification cf = c.classify(inst);
+            cf.print();
+            if (cf.getLabeling().getBestLabel() == inst.getLabeling().getBestLabel())
+                numCorrect++;
+        }
+        System.out.println("Accuracy on training set = " + ((double) numCorrect) / ilist.size());
+    }
 
-		File[] directories = new File[args.length];
-		for (int i = 0; i < args.length; i++)
-			directories[i] = new File (args[i]);
+    public void testIncrementallyTrainedGrowingAlphabets() {
+        System.out.println("testIncrementallyTrainedGrowingAlphabets");
+        String[] args = new String[]{
+                "src/cc/mallet/classify/tests/NaiveBayesData/learn/a",
+                "src/cc/mallet/classify/tests/NaiveBayesData/learn/b"
+        };
 
-		SerialPipes instPipe =
-			// MALLET pipeline for converting instances to feature vectors
-			new SerialPipes(new Pipe[] {
-					new Target2Label(),
-					new Input2CharSequence(),
-					//SKIP_HEADER only works for Unix
-					//new CharSubsequence(CharSubsequence.SKIP_HEADER),
-					new CharSequence2TokenSequence(),
-					new TokenSequenceLowercase(),
-					new TokenSequenceRemoveStopwords(),
-					new TokenSequence2FeatureSequence(),
-					new FeatureSequence2FeatureVector() });
+        File[] directories = new File[args.length];
+        for (int i = 0; i < args.length; i++)
+            directories[i] = new File(args[i]);
 
-		InstanceList instList = new InstanceList(instPipe);
-		instList.addThruPipe(new
-				FileIterator(directories, FileIterator.STARTING_DIRECTORIES));
+        SerialPipes instPipe =
+                // MALLET pipeline for converting instances to feature vectors
+                new SerialPipes(new Pipe[]{
+                        new Target2Label(),
+                        new Input2CharSequence(),
+                        //SKIP_HEADER only works for Unix
+                        //new CharSubsequence(CharSubsequence.SKIP_HEADER),
+                        new CharSequence2TokenSequence(),
+                        new TokenSequenceLowercase(),
+                        new TokenSequenceRemoveStopwords(),
+                        new TokenSequence2FeatureSequence(),
+                        new FeatureSequence2FeatureVector()});
 
-		System.out.println("Training 1");
-		NaiveBayesTrainer trainer = new NaiveBayesTrainer();
-		NaiveBayes classifier = trainer.trainIncremental(instList);
+        InstanceList instList = new InstanceList(instPipe);
+        instList.addThruPipe(new
+                FileIterator(directories, FileIterator.STARTING_DIRECTORIES));
 
-		//instList.getDataAlphabet().stopGrowth();
+        System.out.println("Training 1");
+        NaiveBayesTrainer trainer = new NaiveBayesTrainer();
+        NaiveBayes classifier = trainer.trainIncremental(instList);
 
-		// incrementally train...
-		String[] t2directories = {
-				"src/cc/mallet/classify/tests/NaiveBayesData/learn/b"
-		};
+        //instList.getDataAlphabet().stopGrowth();
 
-		System.out.println("data alphabet size " + instList.getDataAlphabet().size());
-		System.out.println("target alphabet size " + instList.getTargetAlphabet().size());
-		InstanceList instList2 = new InstanceList(instPipe);
-		instList2.addThruPipe(new
-				FileIterator(t2directories, FileIterator.STARTING_DIRECTORIES));
+        // incrementally train...
+        String[] t2directories = {
+                "src/cc/mallet/classify/tests/NaiveBayesData/learn/b"
+        };
 
-		System.out.println("Training 2");
+        System.out.println("data alphabet size " + instList.getDataAlphabet().size());
+        System.out.println("target alphabet size " + instList.getTargetAlphabet().size());
+        InstanceList instList2 = new InstanceList(instPipe);
+        instList2.addThruPipe(new
+                FileIterator(t2directories, FileIterator.STARTING_DIRECTORIES));
 
-		System.out.println("data alphabet size " + instList2.getDataAlphabet().size());
-		System.out.println("target alphabet size " + instList2.getTargetAlphabet().size());
+        System.out.println("Training 2");
 
-		NaiveBayes classifier2 = (NaiveBayes) trainer.trainIncremental(instList2);
-	}
+        System.out.println("data alphabet size " + instList2.getDataAlphabet().size());
+        System.out.println("target alphabet size " + instList2.getTargetAlphabet().size());
 
-	public void testIncrementallyTrained()
-	{
-		System.out.println("testIncrementallyTrained");
-		String[]    args = new String[] {
-				"src/cc/mallet/classify/tests/NaiveBayesData/learn/a",
-				"src/cc/mallet/classify/tests/NaiveBayesData/learn/b"
-		};
+        NaiveBayes classifier2 = (NaiveBayes) trainer.trainIncremental(instList2);
+    }
 
-		File[] directories = new File[args.length];
-		for (int i = 0; i < args.length; i++)
-			directories[i] = new File (args[i]);
+    public void testIncrementallyTrained() {
+        System.out.println("testIncrementallyTrained");
+        String[] args = new String[]{
+                "src/cc/mallet/classify/tests/NaiveBayesData/learn/a",
+                "src/cc/mallet/classify/tests/NaiveBayesData/learn/b"
+        };
 
-		SerialPipes instPipe =
-			// MALLET pipeline for converting instances to feature vectors
-			new SerialPipes(new Pipe[] {
-					new Target2Label(),
-					new Input2CharSequence(),
-					//SKIP_HEADER only works for Unix
-					//new CharSubsequence(CharSubsequence.SKIP_HEADER),
-					new CharSequence2TokenSequence(),
-					new TokenSequenceLowercase(),
-					new TokenSequenceRemoveStopwords(),
-					new TokenSequence2FeatureSequence(),
-					new FeatureSequence2FeatureVector() });
+        File[] directories = new File[args.length];
+        for (int i = 0; i < args.length; i++)
+            directories[i] = new File(args[i]);
 
-		InstanceList instList = new InstanceList(instPipe);
-		instList.addThruPipe(new
-				FileIterator(directories, FileIterator.STARTING_DIRECTORIES));
+        SerialPipes instPipe =
+                // MALLET pipeline for converting instances to feature vectors
+                new SerialPipes(new Pipe[]{
+                        new Target2Label(),
+                        new Input2CharSequence(),
+                        //SKIP_HEADER only works for Unix
+                        //new CharSubsequence(CharSubsequence.SKIP_HEADER),
+                        new CharSequence2TokenSequence(),
+                        new TokenSequenceLowercase(),
+                        new TokenSequenceRemoveStopwords(),
+                        new TokenSequence2FeatureSequence(),
+                        new FeatureSequence2FeatureVector()});
 
-		System.out.println("Training 1");
-		NaiveBayesTrainer trainer = new NaiveBayesTrainer();
-		NaiveBayes classifier = (NaiveBayes) trainer.trainIncremental(instList);
+        InstanceList instList = new InstanceList(instPipe);
+        instList.addThruPipe(new
+                FileIterator(directories, FileIterator.STARTING_DIRECTORIES));
 
-		Classification initialClassification = classifier.classify("Hello Everybody");
-		Classification initial2Classification = classifier.classify("Goodbye now");
-		System.out.println("Initial Classification = ");
-		initialClassification.print();
-		initial2Classification.print();
-		System.out.println("data alphabet " + classifier.getAlphabet());
-		System.out.println("label alphabet " + classifier.getLabelAlphabet());
+        System.out.println("Training 1");
+        NaiveBayesTrainer trainer = new NaiveBayesTrainer();
+        NaiveBayes classifier = (NaiveBayes) trainer.trainIncremental(instList);
 
-
-		// incrementally train...
-		String[] t2directories = {
-				"src/cc/mallet/classify/tests/NaiveBayesData/learn/b"
-		};
-
-		System.out.println("data alphabet size " + instList.getDataAlphabet().size());
-		System.out.println("target alphabet size " + instList.getTargetAlphabet().size());
-		InstanceList instList2 = new InstanceList(instPipe);
-		instList2.addThruPipe(new
-				FileIterator(t2directories, FileIterator.STARTING_DIRECTORIES));
-
-		System.out.println("Training 2");
-
-		System.out.println("data alphabet size " + instList2.getDataAlphabet().size());
-		System.out.println("target alphabet size " + instList2.getTargetAlphabet().size());
-
-		NaiveBayes classifier2 = (NaiveBayes) trainer.trainIncremental(instList2);
+        Classification initialClassification = classifier.classify("Hello Everybody");
+        Classification initial2Classification = classifier.classify("Goodbye now");
+        System.out.println("Initial Classification = ");
+        initialClassification.print();
+        initial2Classification.print();
+        System.out.println("data alphabet " + classifier.getAlphabet());
+        System.out.println("label alphabet " + classifier.getLabelAlphabet());
 
 
-	}
+        // incrementally train...
+        String[] t2directories = {
+                "src/cc/mallet/classify/tests/NaiveBayesData/learn/b"
+        };
 
-	public void testEmptyStringBug()
-	{
-		System.out.println("testEmptyStringBug");
-		String[]    args = new String[] {
-				"src/cc/mallet/classify/tests/NaiveBayesData/learn/a",
-				"src/cc/mallet/classify/tests/NaiveBayesData/learn/b"
-		};
+        System.out.println("data alphabet size " + instList.getDataAlphabet().size());
+        System.out.println("target alphabet size " + instList.getTargetAlphabet().size());
+        InstanceList instList2 = new InstanceList(instPipe);
+        instList2.addThruPipe(new
+                FileIterator(t2directories, FileIterator.STARTING_DIRECTORIES));
 
-		File[] directories = new File[args.length];
-		for (int i = 0; i < args.length; i++)
-			directories[i] = new File (args[i]);
+        System.out.println("Training 2");
 
-		SerialPipes instPipe =
-			// MALLET pipeline for converting instances to feature vectors
-			new SerialPipes(new Pipe[] {
-					new Target2Label(),
-					new Input2CharSequence(),
-					//SKIP_HEADER only works for Unix
-					//new CharSubsequence(CharSubsequence.SKIP_HEADER),
-					new CharSequence2TokenSequence(),
-					new TokenSequenceLowercase(),
-					new TokenSequenceRemoveStopwords(),
-					new TokenSequence2FeatureSequence(),
-					new FeatureSequence2FeatureVector() });
+        System.out.println("data alphabet size " + instList2.getDataAlphabet().size());
+        System.out.println("target alphabet size " + instList2.getTargetAlphabet().size());
 
-		InstanceList instList = new InstanceList(instPipe);
-		instList.addThruPipe(new
-				FileIterator(directories, FileIterator.STARTING_DIRECTORIES));
-
-		System.out.println("Training 1");
-		NaiveBayesTrainer trainer = new NaiveBayesTrainer();
-		NaiveBayes classifier = (NaiveBayes) trainer.trainIncremental(instList);
-
-		Classification initialClassification = classifier.classify("Hello Everybody");
-		Classification initial2Classification = classifier.classify("Goodbye now");
-		System.out.println("Initial Classification = ");
-		initialClassification.print();
-		initial2Classification.print();
-		System.out.println("data alphabet " + classifier.getAlphabet());
-		System.out.println("label alphabet " + classifier.getLabelAlphabet());
+        NaiveBayes classifier2 = (NaiveBayes) trainer.trainIncremental(instList2);
 
 
-		// test
-		String[] t2directories = {
-				"src/cc/mallet/classify/tests/NaiveBayesData/learn/b"
-		};
+    }
 
-		System.out.println("data alphabet size " + instList.getDataAlphabet().size());
-		System.out.println("target alphabet size " + instList.getTargetAlphabet().size());
-		InstanceList instList2 = new InstanceList(instPipe);
-		instList2.addThruPipe(new
-				FileIterator(t2directories, FileIterator.STARTING_DIRECTORIES, true));
+    public void testEmptyStringBug() {
+        System.out.println("testEmptyStringBug");
+        String[] args = new String[]{
+                "src/cc/mallet/classify/tests/NaiveBayesData/learn/a",
+                "src/cc/mallet/classify/tests/NaiveBayesData/learn/b"
+        };
 
-		System.out.println("Training 2");
+        File[] directories = new File[args.length];
+        for (int i = 0; i < args.length; i++)
+            directories[i] = new File(args[i]);
 
-		System.out.println("data alphabet size " + instList2.getDataAlphabet().size());
-		System.out.println("target alphabet size " + instList2.getTargetAlphabet().size());
+        SerialPipes instPipe =
+                // MALLET pipeline for converting instances to feature vectors
+                new SerialPipes(new Pipe[]{
+                        new Target2Label(),
+                        new Input2CharSequence(),
+                        //SKIP_HEADER only works for Unix
+                        //new CharSubsequence(CharSubsequence.SKIP_HEADER),
+                        new CharSequence2TokenSequence(),
+                        new TokenSequenceLowercase(),
+                        new TokenSequenceRemoveStopwords(),
+                        new TokenSequence2FeatureSequence(),
+                        new FeatureSequence2FeatureVector()});
 
-		NaiveBayes classifier2 = (NaiveBayes) trainer.trainIncremental(instList2);
-		Classification secondClassification = classifier.classify("Goodbye now");
-		secondClassification.print();
+        InstanceList instList = new InstanceList(instPipe);
+        instList.addThruPipe(new
+                FileIterator(directories, FileIterator.STARTING_DIRECTORIES));
 
-	}
+        System.out.println("Training 1");
+        NaiveBayesTrainer trainer = new NaiveBayesTrainer();
+        NaiveBayes classifier = (NaiveBayes) trainer.trainIncremental(instList);
+
+        Classification initialClassification = classifier.classify("Hello Everybody");
+        Classification initial2Classification = classifier.classify("Goodbye now");
+        System.out.println("Initial Classification = ");
+        initialClassification.print();
+        initial2Classification.print();
+        System.out.println("data alphabet " + classifier.getAlphabet());
+        System.out.println("label alphabet " + classifier.getLabelAlphabet());
 
 
+        // test
+        String[] t2directories = {
+                "src/cc/mallet/classify/tests/NaiveBayesData/learn/b"
+        };
+
+        System.out.println("data alphabet size " + instList.getDataAlphabet().size());
+        System.out.println("target alphabet size " + instList.getTargetAlphabet().size());
+        InstanceList instList2 = new InstanceList(instPipe);
+        instList2.addThruPipe(new
+                FileIterator(t2directories, FileIterator.STARTING_DIRECTORIES, true));
+
+        System.out.println("Training 2");
+
+        System.out.println("data alphabet size " + instList2.getDataAlphabet().size());
+        System.out.println("target alphabet size " + instList2.getTargetAlphabet().size());
+
+        NaiveBayes classifier2 = (NaiveBayes) trainer.trainIncremental(instList2);
+        Classification secondClassification = classifier.classify("Goodbye now");
+        secondClassification.print();
+
+    }
 
 
-	static Test suite ()
-	{
-		return new TestSuite (TestNaiveBayes.class);
-		//TestSuite suite= new TestSuite();
-		//   //suite.addTest(new TestNaiveBayes("testIncrementallyTrained"));
-		// suite.addTest(new TestNaiveBayes("testEmptyStringBug"));
+    static Test suite() {
+        return new TestSuite(TestNaiveBayes.class);
+        //TestSuite suite= new TestSuite();
+        //   //suite.addTest(new TestNaiveBayes("testIncrementallyTrained"));
+        // suite.addTest(new TestNaiveBayes("testEmptyStringBug"));
 
-		// return suite;
-	}
+        // return suite;
+    }
 
-	protected void setUp ()
-	{
-	}
+    protected void setUp() {
+    }
 
-	public static void main (String[] args)
-	{
-		junit.textui.TestRunner.run (suite());
-	}
+    public static void main(String[] args) {
+        junit.textui.TestRunner.run(suite());
+    }
 
 }
