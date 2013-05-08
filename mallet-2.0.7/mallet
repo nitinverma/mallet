@@ -6,22 +6,23 @@ usage() {
 CURR_PWD=${PWD}
 cd $(dirname $0)
 SCRIPT_PWD=${PWD}
+cd $CURR_PWD
 
-TARGET=mallet-core/target
+TARGET=${SCRIPT_PWD}/mallet-core/target
 
 if [ ! -d $TARGET ]
 then
-	./compile
+	(cd $SCRIPT_PWD && ./compile)
 fi
 
 DEPENDENCIES=${TARGET}/dependency
 
 if [ ! -d $DEPENDENCIES ]
 then
-	mvn dependency:copy-dependencies
+	(cd $SCRIPT_PWD && mvn dependency:copy-dependencies)
 fi
 
-if [ -s $@ ]
+if [[ ""$@"" == """" ]]
 then
 	usage
 	exit 1
@@ -29,5 +30,4 @@ fi
 
 java -cp ${TARGET}/classes:$(echo $(ls ${DEPENDENCIES}/*.jar) | sed -e 's/ /:/g' ) $@
 
-cd $CURR_PWD
 
