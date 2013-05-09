@@ -381,7 +381,11 @@ public class MaxLatticeDefault implements MaxLattice
 		if (outputAlignmentCache != null && outputAlignmentCache.size() >= n)
 			return outputAlignmentCache;
 		bestViterbiNodeSequences(n); // ensure that viterbiNodeAlignmentCache has at least size n
-		ArrayList<SequencePairAlignment<Object,Object>> ret = new ArrayList<SequencePairAlignment<Object,Object>>(n);
+            ArrayList<SequencePairAlignment<Object,Object>> ret =
+                    new ArrayList<SequencePairAlignment<Object,Object>>(n);
+
+        n = viterbiNodeAlignmentCache.size() < n ? viterbiNodeAlignmentCache.size() : n;
+
 		for (int i = 0; i < n; i++) {
 			Object[] ss = new Object[latticeLength-1];
 			Sequence<ViterbiNode> vs = viterbiNodeAlignmentCache.get(i).output();
@@ -389,6 +393,7 @@ public class MaxLatticeDefault implements MaxLattice
 				ss[j] = vs.get(j+1).output; // Here is where we grab the output from the ViterbiNode destination
 			ret.add(new SequencePairAlignment<Object,Object>(input, new ArraySequence<Object>(ss), viterbiNodeAlignmentCache.get(i).getWeight()));
 		}
+
 		outputAlignmentCache = ret;
 		return ret;
 	}	
@@ -400,7 +405,7 @@ public class MaxLatticeDefault implements MaxLattice
 	public List<Sequence<Object>> bestOutputSequences (int n) {
 		bestOutputAlignments(n); // ensure that outputAlignmentCache has at least size n
 		ArrayList<Sequence<Object>> ret = new ArrayList<Sequence<Object>>(n);
-		for (int i = 0; i < n; i++)
+		for (int i = 0; i < outputAlignmentCache.size(); i++)
 			ret.add (outputAlignmentCache.get(i).output());
 		return ret;
 		// TODO consider caching this result
