@@ -3,6 +3,13 @@ usage() {
 	echo "$0 <classname> <options>"
 }
 
+if [[ """" == ""$DEBUG"" ]]
+then
+	DEBUG_OPTS=""
+else
+	DEBUG_OPTS="-Xdebug -Xrunjdwp:server=y,transport=dt_socket,address=4000,suspend=y"
+fi
+
 CURR_PWD=${PWD}
 cd $(dirname $0)
 SCRIPT_PWD=${PWD}
@@ -28,6 +35,6 @@ then
 	exit 1
 fi
 
-java -cp ${TARGET}/classes:$(echo $(ls ${DEPENDENCIES}/*.jar) | sed -e 's/ /:/g' ) $@
+java ${DEBUG_OPTS} -cp ${TARGET}/classes:$(echo $(ls ${DEPENDENCIES}/*.jar) | sed -e 's/ /:/g' ) $@
 
 
